@@ -29,7 +29,7 @@ function AdminDashboard() {
         }`}
       >
         <div className="p-4 flex items-center justify-between">
-          {isSidebarOpen && <h1 className="text-xl font-bold">City Ride</h1>}
+          {isSidebarOpen && <h1 className="text-xl font-bold">City Rides</h1>}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="p-2 hover:bg-gray-100 rounded-lg"
