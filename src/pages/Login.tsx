@@ -47,7 +47,7 @@ function Login() {
         
         // Pass the user data to the login function
         login(userData);
-        navigate('/admin');
+        navigate('/admin/users');
       } else {
         // Here you would normally check against your backend
         setLoginError('Invalid credentials. Try using the default credentials.');
