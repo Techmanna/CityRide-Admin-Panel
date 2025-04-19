@@ -230,7 +230,7 @@ function LandingPage() {
             >
               <div className="bg-gradient-to-tr from-primary-100 to-secondary-100 absolute inset-0 rounded-2xl transform -rotate-3 scale-105" />
               <img 
-                src="/images/image2.png"
+                src="/images/image4.png"
                 alt="About City Ride"
                 className="rounded-2xl shadow-xl relative z-10"
                 loading="lazy"

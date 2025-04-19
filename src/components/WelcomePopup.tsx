@@ -99,7 +99,7 @@ const WelcomePopup: React.FC<WelcomePopupProps> = ({ isOpen, onClose }) => {
 
             <div className="h-64 mb-6 flex items-center justify-center overflow-hidden relative">
   <motion.img
-    src="/images/image4.png" 
+    src="/images/image5.jpg" 
     alt="Animated"
     className="w-42 h-42"
     animate={{ x: [ -200, 200, -200 ] }}
