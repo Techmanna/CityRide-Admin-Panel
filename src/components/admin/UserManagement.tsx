@@ -131,9 +131,8 @@ function UserManagement() {
       user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phone?.toLowerCase().includes(searchTerm.toLowerCase());
-    // const matchesRole = selectedRole === 'all' || user.role === selectedRole;
-    // const matchesStatus = selectedStatus === 'all' || user.status === selectedStatus;
-    // return matchesSearch && matchesRole && matchesStatus;
+    // Return the result of the search filtering
+    return matchesSearch;
   });
 
   const getStatusColor = (status: string) => {
@@ -404,7 +403,7 @@ function UserManagement() {
                       placeholder="Enter full name"
                     />
                   </div>
-{/*                   
+                  
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                       Email Address
@@ -418,7 +417,7 @@ function UserManagement() {
                       className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter email address"
                     />
-                  </div> */}
+                  </div>
                   
                   <div>
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
@@ -514,9 +513,9 @@ function UserManagement() {
                   </button>
                   <button
                     onClick={() => addUser.mutate(newUser)}
-                    disabled={!newUser.full_name || !newUser.phone}
+                    disabled={!newUser.full_name || !newUser.phone || !newUser.email}
                     className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 ${
-                      (!newUser.full_name || !newUser.phone) ? 'opacity-50 cursor-not-allowed' : ''
+                      (!newUser.full_name || !newUser.phone || !newUser.email) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
                     <Plus size={18} />
