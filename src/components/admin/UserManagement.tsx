@@ -148,9 +148,9 @@ function UserManagement() {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'admin':
+      case 'isDriverTrue':
         return 'bg-purple-100 text-purple-800';
-      case 'rider':
+      case 'isDriverFalse':
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -216,9 +216,8 @@ function UserManagement() {
                 className="border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="rider">Rider</option>
-                <option value="customer">Customer</option>
+                <option value="isDriverFalse">Customers</option>
+                <option value="isDriverTrue">Drivers</option>
               </select>
               <select
                 value={selectedStatus}
@@ -277,12 +276,12 @@ function UserManagement() {
                       <span className="text-sm text-gray-600">{user.phone || 'N/A'}</span>
                     </div>
                   </td>
-                  {/* <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
-                      {user.role === 'admin' && <Shield size={14} className="inline mr-1" />}
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                    </span>
-                  </td> */}
+                   {/* <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium `}>
+                      {user.is_driver === true && <Shield size={14} className="inline mr-1" />}
+                      {/* {user.is_driver.charAt(0).toUpperCase() + user.is_driver.slice(1) */}
+                    {/*</span>*/}
+                 {/* </td>  */}
                   {/* <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
                       {user.status === 'active' ? (

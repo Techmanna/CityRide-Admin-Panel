@@ -29,7 +29,7 @@ function AdminDashboard() {
         }`}
       >
         <div className="p-4 flex items-center justify-between">
-          {isSidebarOpen && <h1 className="text-xl font-bold">City Rides</h1>}
+          {isSidebarOpen && <h1 className="text-xl font-bold">HI, ADMIN 👋</h1>}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="p-2 hover:bg-gray-100 rounded-lg"
@@ -42,7 +42,7 @@ function AdminDashboard() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center px-4 py-3 ${
+              className={`flex items-center px-4 py-3 hover:rounded-full ${
                 location.pathname === item.path
                   ? 'bg-primary text-white'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -54,7 +54,7 @@ function AdminDashboard() {
           ))}
           <button
             onClick={logout}
-            className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-100 w-full"
+            className="flex items-center px-4 py-3 mt-[230px] text-red-600 hover:bg-gray-100 w-full hover:rounded-full"
           >
             <LogOut size={20} />
             {isSidebarOpen && <span className="ml-3">Logout</span>}
