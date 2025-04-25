@@ -83,7 +83,7 @@ function RideManagement() {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+        <Loader2 className="h-12 w-12 text-orange-500 animate-spin mb-4" />
         <p className="text-lg text-gray-600">Loading ride data...</p>
       </div>
     );

@@ -218,7 +218,7 @@ function SettingsPanel() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+        <Loader2 className="h-12 w-12 text-orange-500 animate-spin mb-4" />
         <p className="text-lg text-gray-600">Loading Settings...</p>
       </div>
     );
@@ -228,7 +228,7 @@ function SettingsPanel() {
     <div className="p-6 space-y-8 max-w-4xl mx-auto">
       {/* Admin Profile Card */}
       <div className="bg-white rounded-xl shadow-md p-6 flex items-center gap-4">
-        <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-xl font-bold">
+        <div className="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-xl font-bold">
           A
         </div>
         <div>
@@ -236,7 +236,7 @@ function SettingsPanel() {
           <p className="text-gray-500 text-sm">Update your application configuration</p>
         </div>
         {saving && (
-          <div className="ml-auto flex items-center text-primary">
+          <div className="ml-auto flex items-center text-orange-500">
             <Loader2 className="w-4 h-4 animate-spin mr-2" />
             <span className="text-sm">Saving...</span>
           </div>
@@ -279,7 +279,7 @@ function SettingsPanel() {
               type="button"
               onClick={saveAllSettings}
               disabled={saving}
-              className="bg-primary text-white px-6 py-2 rounded-lg flex items-center hover:bg-opacity-90 transition"
+              className="bg-orange-500 text-white px-6 py-2 rounded-lg flex items-center hover:bg-opacity-90 transition"
             >
               <Save size={20} className="mr-2" />
               {saving ? 'Saving...' : 'Save All Settings'}

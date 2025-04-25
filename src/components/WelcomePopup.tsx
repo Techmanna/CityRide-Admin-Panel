@@ -101,7 +101,7 @@ const WelcomePopup: React.FC<WelcomePopupProps> = ({ isOpen, onClose }) => {
   <motion.img
     src="/images/image5.jpg" 
     alt="Animated"
-    className="w-42 h-42"
+    className="w-[250px] h-[250px]"
     animate={{ x: [ -200, 200, -200 ] }}
     transition={{
       duration: 6,

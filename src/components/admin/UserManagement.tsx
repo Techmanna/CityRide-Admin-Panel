@@ -159,18 +159,18 @@ function UserManagement() {
 
   const getDriverBadge = (isDriver: boolean) => {
     return isDriver ? (
-      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+      <span className="bg-orange-400 text-white px-3 py-1 rounded-full text-xs font-medium">
         Driver
       </span>
     ) : <span className="bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">
     No Driver
-  </span>;
+  </span>
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
     );
   }
@@ -181,7 +181,7 @@ function UserManagement() {
         <h2 className="text-3xl font-bold text-gray-900">User Management</h2>
         <button
           onClick={() => setIsAddUserModalOpen(true)}
-          className="bg-primary text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition shadow-sm"
+          className="bg-orange-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-orange-700 transition shadow-sm"
         >
           <Plus size={20} />
           <span>Add User</span>
@@ -318,7 +318,7 @@ function UserManagement() {
                         )}
                       </button> */}
                       <button 
-                        className="text-gray-400 hover:text-blue-600 transition-colors"
+                        className="text-gray-400 hover:text-orange-600 transition-colors"
                         title="Edit User"
                       >
                         <Edit size={20} />
@@ -398,7 +398,7 @@ function UserManagement() {
                       name="full_name"
                       value={newUser.full_name}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="Enter full name"
                     />
                   </div>
@@ -413,7 +413,7 @@ function UserManagement() {
                       name="email"
                       value={newUser.email}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="Enter email address"
                     />
                   </div>
@@ -428,7 +428,7 @@ function UserManagement() {
                       name="phone"
                       value={newUser.phone}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="Enter phone number"
                     />
                   </div>
@@ -476,7 +476,7 @@ function UserManagement() {
                       name="is_driver"
                       checked={newUser.is_driver}
                       onChange={handleInputChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded-full"
                     />
                     <label htmlFor="is_driver" className="ml-2 block text-sm text-gray-700">
                       Is Driver
@@ -494,7 +494,7 @@ function UserManagement() {
                         name="photo_url"
                         value={newUser.photo_url}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         placeholder="Enter photo URL"
                       />
                       <button className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 rounded-r-lg border border-l-0 border-gray-200">
@@ -513,7 +513,7 @@ function UserManagement() {
                   <button
                     onClick={() => addUser.mutate(newUser)}
                     disabled={!newUser.full_name || !newUser.phone || !newUser.email}
-                    className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 ${
+                    className={`px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2 ${
                       (!newUser.full_name || !newUser.phone || !newUser.email) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >

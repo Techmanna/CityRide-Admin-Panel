@@ -5,7 +5,7 @@ import { Users, Car, CreditCard, Settings, LogOut, Menu, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext';
 import UserManagement from '../components/admin/UserManagement';
 import RideManagement from '../components/admin/RideManagement';
-import PaymentManagement from '../components/admin/PaymentManagement';
+import TransactionManagement from '../components/admin/TransactionManagement';
 import SettingsPanel from '../components/admin/SettingsPanel';
 
 function AdminDashboard() {
@@ -16,7 +16,7 @@ function AdminDashboard() {
   const navItems = [
     { path: '/admin/users', icon: <Users size={20} />, label: 'Users' },
     { path: '/admin/rides', icon: <Car size={20} />, label: 'Rides' },
-    { path: '/admin/payments', icon: <CreditCard size={20} />, label: 'Payments' },
+    { path: '/admin/transactions', icon: <CreditCard size={20} />, label: 'Transactions' },
     { path: '/admin/settings', icon: <Settings size={20} />, label: 'Settings' },
   ];
 
@@ -44,7 +44,7 @@ function AdminDashboard() {
               to={item.path}
               className={`flex items-center px-4 py-3 hover:rounded-full ${
                 location.pathname === item.path
-                  ? 'bg-primary text-white'
+                  ? 'bg-orange-500 text-white'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -80,7 +80,7 @@ function AdminDashboard() {
               <Routes>
                 <Route path="/users" element={<UserManagement />} />
                 <Route path="/rides" element={<RideManagement />} />
-                <Route path="/payments" element={<PaymentManagement />} />
+                <Route path="/transactions" element={<TransactionManagement />} />
                 <Route path="/settings" element={<SettingsPanel />} />
               </Routes>
             </motion.div>
