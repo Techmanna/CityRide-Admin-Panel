@@ -8,8 +8,6 @@ import RideManagement from '../components/admin/RideManagement';
 import TransactionManagement from '../components/admin/TransactionManagement';
 import SettingsPanel from '../components/admin/SettingsPanel';
 
-// Mock auth context - replace with your actual auth implementation
-
 // Ride Types Management Component
 const RideTypesManagement = () => {
   const [rideTypes, setRideTypes] = useState([]);
