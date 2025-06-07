@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Car, CreditCard, Settings, LogOut, Menu, X, ChevronDown, Edit3, Plus, Trash2, Save, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Users, Car, CreditCard, HandCoins, Settings, LogOut, Menu, X, ChevronDown, Edit3, Plus, Trash2, Save, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import UserManagement from '../components/admin/UserManagement';
@@ -479,6 +479,7 @@ function AdminDashboard() {
       ]
     },
     { path: '/admin/transactions', icon: <CreditCard size={20} />, label: 'Transactions' },
+    { path: '/admin/payout', icon: <HandCoins size={20} />, label: 'Payouts' },
     { path: '/admin/settings', icon: <Settings size={20} />, label: 'Settings' },
   ];
 
