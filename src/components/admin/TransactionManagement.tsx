@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { DollarSign, TrendingUp, CreditCard, RefreshCw, AlertCircle } from 'lucide-react';
+import { Hash, TrendingUp, CreditCard, RefreshCw, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 // Function to fetch transactions from Supabase - limit to only needed fields
@@ -219,7 +219,7 @@ function TransactionManagement() {
                 )}
               </h3>
             </div>
-            <DollarSign className="text-blue-500 h-8 w-8" />
+            <Hash className="text-blue-500 h-8 w-8" />
           </div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">

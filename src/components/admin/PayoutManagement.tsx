@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  DollarSign, 
+  Hash, 
   Clock, 
   CheckCircle, 
   Calendar,
@@ -396,7 +396,7 @@ const PayoutManagement = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm">Total Payments</p>
-              <p className="text-3xl font-bold">${overallStats.totalAmount.toFixed(2)}</p>
+              <p className="text-3xl font-bold">#{overallStats.totalAmount.toFixed(2)}</p>
             </div>
             <TrendingUp size={32} className="text-blue-200" />
           </div>
@@ -411,7 +411,7 @@ const PayoutManagement = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-yellow-100 text-sm">Pending Payments</p>
-              <p className="text-3xl font-bold">${overallStats.pendingAmount.toFixed(2)}</p>
+              <p className="text-3xl font-bold">#{overallStats.pendingAmount.toFixed(2)}</p>
             </div>
             <Clock size={32} className="text-yellow-200" />
           </div>
@@ -426,7 +426,7 @@ const PayoutManagement = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100 text-sm">Paid Out</p>
-              <p className="text-3xl font-bold">${overallStats.paidAmount.toFixed(2)}</p>
+              <p className="text-3xl font-bold">#{overallStats.paidAmount.toFixed(2)}</p>
             </div>
             <CheckCircle size={32} className="text-green-200" />
           </div>
@@ -466,10 +466,10 @@ const PayoutManagement = () => {
                     Unpaid ({activeTimeTab} • {getPayoutFrequencyFilter(activeTimeTab)} frequency)
                   </p>
                   <p className="text-2xl font-bold text-red-900">
-                    ${periodStats[activeTimeTab]?.unpaid.toFixed(2) || '0.00'}
+                    #{periodStats[activeTimeTab]?.unpaid.toFixed(2) || '0.00'}
                   </p>
                 </div>
-                <DollarSign size={24} className="text-red-600" />
+                <Hash size={24} className="text-red-600" />
               </div>
             </div>
 
@@ -480,7 +480,7 @@ const PayoutManagement = () => {
                     Paid ({activeTimeTab} • {getPayoutFrequencyFilter(activeTimeTab)} frequency)
                   </p>
                   <p className="text-2xl font-bold text-green-900">
-                    ${periodStats[activeTimeTab]?.paid.toFixed(2) || '0.00'}
+                    #{periodStats[activeTimeTab]?.paid.toFixed(2) || '0.00'}
                   </p>
                 </div>
                 <CheckCircle size={24} className="text-green-600" />
@@ -605,7 +605,7 @@ const PayoutManagement = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          ${parseFloat(earning.amount).toFixed(2)}
+                          #{parseFloat(earning.amount).toFixed(2)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

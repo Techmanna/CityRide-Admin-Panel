@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { 
   MapPin, 
   Clock, 
-  DollarSign, 
+  Hash, 
   Filter,
   ChevronLeft,
   ChevronRight,
@@ -164,7 +164,7 @@ function RideManagement() {
                 <h3 className="text-2xl font-bold">${statsData?.todayRevenue.toFixed(2)}</h3>
               )}
             </div>
-            <DollarSign className="text-yellow-500 h-8 w-8" />
+            <Hash className="text-yellow-500 h-8 w-8" />
           </div>
         </div>
       </div>
