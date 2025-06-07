@@ -7,6 +7,7 @@ import UserManagement from '../components/admin/UserManagement';
 import RideManagement from '../components/admin/RideManagement';
 import TransactionManagement from '../components/admin/TransactionManagement';
 import SettingsPanel from '../components/admin/SettingsPanel';
+import PayoutManagement from '../components/admin/PayoutManagement';
 
 // Ride Types Management Component
 const RideTypesManagement = () => {
@@ -479,7 +480,7 @@ function AdminDashboard() {
       ]
     },
     { path: '/admin/transactions', icon: <CreditCard size={20} />, label: 'Transactions' },
-    { path: '/admin/payout', icon: <HandCoins size={20} />, label: 'Payouts' },
+    { path: '/admin/payouts', icon: <HandCoins size={20} />, label: 'Payouts' },
     { path: '/admin/settings', icon: <Settings size={20} />, label: 'Settings' },
   ];
 
@@ -502,6 +503,8 @@ function AdminDashboard() {
         return <RideTypesManagement />;
       case '/admin/transactions':
         return <TransactionManagement />;
+      case '/admin/payouts':
+        return <PayoutManagement />;
       case '/admin/settings':
         return <SettingsPanel />;
       default:
