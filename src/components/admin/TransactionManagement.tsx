@@ -1,19 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Hash, TrendingUp, CreditCard, RefreshCw, AlertCircle } from 'lucide-react';
+import { Hash, TrendingUp, CreditCard, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-// Function to fetch transactions from Supabase - limit to only needed fields
-const fetchTransactions = async () => {
+// Function to fetch transactions from Supabase with pagination
+const fetchTransactions = async ({ page = 1, pageSize = 20 }) => {
   try {
-    const { data, error } = await supabase
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
       .from('transactions')
-      .select('id, user_id, amount, currency, type, payment_purpose, status, description, created_at')
+      .select('id, user_id, amount, currency, type, payment_purpose, status, description, created_at', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .limit(100);
+      .range(from, to);
 
     if (error) throw error;
-    return data;
+    
+    return {
+      transactions: data || [],
+      totalCount: count || 0,
+      totalPages: Math.ceil((count || 0) / pageSize),
+      currentPage: page,
+      pageSize
+    };
   } catch (error) {
     console.error('Error fetching transactions:', error);
     throw new Error('Failed to fetch transaction data from Supabase');
@@ -36,16 +46,15 @@ const fetchTransactionStats = async () => {
     
     // Get total revenue (completed credits)
     const { data: revenueData, error: revenueError } = await supabase
-  .from('transactions')
-  .select('sum(amount)', { head: false })
-  .eq('status', 'completed')
-  .eq('type', 'credit')
-  .single();
+      .from('transactions')
+      .select('sum(amount)', { head: false })
+      .eq('status', 'completed')
+      .eq('type', 'credit')
+      .single();
 
-if (revenueError) throw revenueError;
-const totalRevenue = revenueData?.sum || 0;
+    if (revenueError) throw revenueError;
+    const totalRevenue = revenueData?.sum || 0;
 
-    
     // Get pending transactions count
     const { count: pendingCount, error: pendingError } = await supabase
       .from('transactions')
@@ -109,18 +118,151 @@ const totalRevenue = revenueData?.sum || 0;
   }
 };
 
+// Pagination component
+const Pagination = ({ currentPage, totalPages, onPageChange, totalCount, pageSize }) => {
+  const getVisiblePages = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, '...');
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push('...', totalPages);
+    } else {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots;
+  };
+
+  const startItem = (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalCount);
+
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-between px-6 py-4 border-t bg-white">
+      <div className="flex items-center text-sm text-gray-500">
+        <span>
+          Showing {startItem} to {endItem} of {totalCount} results
+        </span>
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        {/* First page button */}
+        <button
+          onClick={() => onPageChange(1)}
+          disabled={currentPage === 1}
+          className="p-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </button>
+        
+        {/* Previous page button */}
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="p-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+
+        {/* Page numbers */}
+        <div className="flex items-center space-x-1">
+          {getVisiblePages().map((page, index) => (
+            <React.Fragment key={index}>
+              {page === '...' ? (
+                <span className="px-3 py-2 text-gray-500">...</span>
+              ) : (
+                <button
+                  onClick={() => onPageChange(page)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    currentPage === page
+                      ? 'bg-blue-500 text-white'
+                      : 'text-gray-700 hover:bg-gray-50 border border-gray-300'
+                  }`}
+                >
+                  {page}
+                </button>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Next page button */}
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="p-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        
+        {/* Last page button */}
+        <button
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}
+          className="p-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Page size selector component
+const PageSizeSelector = ({ pageSize, onPageSizeChange, totalCount }) => {
+  const pageSizeOptions = [10, 20, 50, 100];
+  
+  return (
+    <div className="flex items-center space-x-2 text-sm text-gray-600">
+      <label htmlFor="pageSize">Show:</label>
+      <select
+        id="pageSize"
+        value={pageSize}
+        onChange={(e) => onPageSizeChange(Number(e.target.value))}
+        className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        {pageSizeOptions.map(size => (
+          <option key={size} value={size}>
+            {size}
+          </option>
+        ))}
+      </select>
+      <span>per page</span>
+    </div>
+  );
+};
+
 function TransactionManagement() {
-  // Fetch transactions with React Query
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  // Fetch transactions with React Query and pagination
   const { 
-    data: transactions, 
+    data: transactionData, 
     isLoading: isLoadingTransactions, 
     error: transactionsError,
     refetch: refetchTransactions
   } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: fetchTransactions,
+    queryKey: ['transactions', currentPage, pageSize],
+    queryFn: () => fetchTransactions({ page: currentPage, pageSize }),
     staleTime: 30000, // Data considered fresh for 30 seconds
     refetchOnWindowFocus: true, // Refetch when window gets focus
+    keepPreviousData: true, // Keep previous data while loading new page
   });
 
   // Fetch transaction statistics with React Query
@@ -135,6 +277,17 @@ function TransactionManagement() {
     staleTime: 60000, // Stats considered fresh for 60 seconds
     refetchOnWindowFocus: true,
   });
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -165,7 +318,7 @@ function TransactionManagement() {
   };
 
   // Handle different UI states
-  if (isLoadingTransactions && isLoadingStats) {
+  if (isLoadingTransactions && isLoadingStats && currentPage === 1) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="flex flex-col items-center">
@@ -177,6 +330,9 @@ function TransactionManagement() {
   }
 
   const hasError = transactionsError || statsError;
+  const transactions = transactionData?.transactions || [];
+  const totalCount = transactionData?.totalCount || 0;
+  const totalPages = transactionData?.totalPages || 0;
 
   return (
     <div>
@@ -261,13 +417,20 @@ function TransactionManagement() {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="flex justify-between items-center px-6 py-4 border-b">
           <h3 className="text-lg font-semibold">Recent Transactions</h3>
-          <div className="text-sm text-gray-500">
-            {!isLoadingTransactions && transactions && `${transactions.length} transactions`}
+          <div className="flex items-center space-x-4">
+            <PageSizeSelector 
+              pageSize={pageSize} 
+              onPageSizeChange={handlePageSizeChange}
+              totalCount={totalCount}
+            />
+            <div className="text-sm text-gray-500">
+              {totalCount > 0 && `${totalCount} total transactions`}
+            </div>
           </div>
         </div>
         
         <div className="overflow-x-auto">
-          {isLoadingTransactions ? (
+          {isLoadingTransactions && currentPage === 1 ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             </div>
@@ -279,71 +442,87 @@ function TransactionManagement() {
               </div>
             </div>
           ) : transactions && transactions.length > 0 ? (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purpose</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map((transaction) => (
-                  <tr
-                    key={transaction.id}
-                    className="border-b hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {truncateId(transaction.id)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {truncateId(transaction.user_id)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {formatCurrency(transaction.amount, transaction.currency)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          transaction.type === 'credit'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
+            <>
+              <div className="relative">
+                {isLoadingTransactions && (
+                  <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                )}
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purpose</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((transaction) => (
+                      <tr
+                        key={transaction.id}
+                        className="border-b hover:bg-gray-50 transition-colors"
                       >
-                        {transaction.type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {transaction.payment_purpose}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          transaction.status === 'completed'
-                            ? 'bg-green-100 text-green-800'
-                            : transaction.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {transaction.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm truncate max-w-xs">
-                      {transaction.description || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {formatDate(transaction.created_at)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {truncateId(transaction.id)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {truncateId(transaction.user_id)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {formatCurrency(transaction.amount, transaction.currency)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              transaction.type === 'credit'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {transaction.type}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {transaction.payment_purpose}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              transaction.status === 'completed'
+                                ? 'bg-green-100 text-green-800'
+                                : transaction.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {transaction.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm truncate max-w-xs">
+                          {transaction.description || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {formatDate(transaction.created_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                totalCount={totalCount}
+                pageSize={pageSize}
+              />
+            </>
           ) : (
             <div className="flex justify-center items-center h-64">
               <p className="text-gray-500">No transactions found</p>
