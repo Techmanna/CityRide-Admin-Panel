@@ -347,7 +347,7 @@ const RideTypesManagement = () => {
                       />
                     ) : (
                       <div className="text-sm text-gray-900">
-                        ${parseFloat(rideType.fare || 0).toFixed(2)}
+                        #{parseFloat(rideType.fare || 0).toFixed(2)}
                       </div>
                     )}
                   </td>
@@ -432,13 +432,13 @@ const RideTypesManagement = () => {
               <div className="bg-green-50 p-4 rounded-lg">
                 <h4 className="text-sm font-medium text-green-800">Lowest Fare</h4>
                 <p className="text-2xl font-bold text-green-900">
-                  ${Math.min(...rideTypes.map(rt => parseFloat(rt.fare || 0))).toFixed(2)}
+                  #{Math.min(...rideTypes.map(rt => parseFloat(rt.fare || 0))).toFixed(2)}
                 </p>
               </div>
               <div className="bg-orange-100 p-4 rounded-lg">
                 <h4 className="text-sm font-medium text-purple-800">Highest Fare</h4>
                 <p className="text-2xl font-bold text-purple-900">
-                  ${Math.max(...rideTypes.map(rt => parseFloat(rt.fare || 0))).toFixed(2)}
+                  #{Math.max(...rideTypes.map(rt => parseFloat(rt.fare || 0))).toFixed(2)}
                 </p>
               </div>
             </div>
