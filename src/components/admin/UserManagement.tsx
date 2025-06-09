@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Edit, Trash2, Plus, Search, X, CheckCircle, XCircle, 
   MoreVertical, Shield, Phone, Calendar, Upload, Mail,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Eye, FileText, Download,
+  Clock, AlertCircle
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -16,8 +17,17 @@ interface UserData {
   photo_url: string;
   created_at: string;
   email: string;
-  // role: 'admin' | 'rider' | 'customer';
-  // status: 'active' | 'inactive' | 'pending';
+}
+
+interface DriverDocument {
+  id: string;
+  user_id: string;
+  label: string;
+  file_name: string;
+  file_path: string;
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 function UserManagement() {
@@ -25,14 +35,14 @@ function UserManagement() {
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [isDriverDetailsModalOpen, setIsDriverDetailsModalOpen] = useState(false);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [newUser, setNewUser] = useState<Partial<UserData>>({
     full_name: '',
     email: '',
     phone: '',
-    // role: 'customer',
-    // status: 'active',
     is_driver: false,
     photo_url: ''
   });
@@ -51,6 +61,24 @@ function UserManagement() {
     },
   });
 
+  // Fetch driver documents for selected driver
+  const { data: driverDocuments, isLoading: documentsLoading } = useQuery({
+    queryKey: ['driver_documents', selectedDriverId],
+    queryFn: async () => {
+      if (!selectedDriverId) return [];
+      
+      const { data, error } = await supabase
+        .from('driver_documents')
+        .select('*')
+        .eq('user_id', selectedDriverId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as DriverDocument[];
+    },
+    enabled: !!selectedDriverId,
+  });
+
   const updateUserStatus = useMutation({
     mutationFn: async ({ userId, status }: { userId: string; status: string }) => {
       const { error } = await supabase
@@ -65,11 +93,28 @@ function UserManagement() {
     },
   });
 
+  const verifyDocument = useMutation({
+    mutationFn: async ({ documentId, isVerified }: { documentId: string; isVerified: boolean }) => {
+      const { error } = await supabase
+        .from('driver_documents')
+        .update({ 
+          is_verified: isVerified,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', documentId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['driver_documents', selectedDriverId] });
+    },
+  });
+
   const addUser = useMutation({
     mutationFn: async (userData: Partial<UserData>) => {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email!,
-        password: 'TemporaryPassword123!', // you can generate a secure one or collect from input
+        password: 'TemporaryPassword123!',
       });
   
       if (authError) throw authError;
@@ -80,8 +125,6 @@ function UserManagement() {
           id: authData.user?.id,
           full_name: userData.full_name,
           phone: userData.phone,
-          // role: userData.role,
-          // status: userData.status,
           is_driver: userData.is_driver,
           photo_url: userData.photo_url,
         }]);
@@ -95,14 +138,11 @@ function UserManagement() {
         full_name: '',
         email: '',
         phone: '',
-        // role: 'customer',
-        // status: 'active',
         is_driver: false,
         photo_url: ''
       });
     },
   });
-  
 
   const deleteUser = useMutation({
     mutationFn: async (userId: string) => {
@@ -129,6 +169,47 @@ function UserManagement() {
     }
   };
 
+  const handleViewDriverDetails = (driverId: string) => {
+    setSelectedDriverId(driverId);
+    setIsDriverDetailsModalOpen(true);
+  };
+
+  const handleCloseDriverDetails = () => {
+    setIsDriverDetailsModalOpen(false);
+    setSelectedDriverId(null);
+  };
+
+  const handleDownloadDocument = async (filePath: string, fileName: string) => {
+  try {
+    console.log('Attempting to download file from path:', filePath); // Debug
+
+    
+    const path = filePath.replace(/^driver-documents\//, '');
+
+    const { data, error } = await supabase.storage
+      .from('driver-documents')
+      .download(path);
+
+    if (error) {
+      console.error('Supabase download error:', error.message || error);
+      throw error;
+    }
+
+    const url = URL.createObjectURL(data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error: any) {
+    console.error('Error downloading file:', error.message || error);
+    alert(`Error downloading file: ${error.message || error}`);
+  }
+};
+
+
   // Enhanced filtering with role filter functionality
   const filteredUsers = useMemo(() => {
     if (!users) return [];
@@ -142,9 +223,6 @@ function UserManagement() {
       const matchesRole = selectedRole === 'all' || 
         (selectedRole === 'isDriverTrue' && user.is_driver) ||
         (selectedRole === 'isDriverFalse' && !user.is_driver);
-      
-      // Note: Status filtering is commented out since status field is not in current schema
-      // const matchesStatus = selectedStatus === 'all' || user.status === selectedStatus;
       
       return matchesSearch && matchesRole;
     });
@@ -195,6 +273,20 @@ function UserManagement() {
     );
   };
 
+  const getVerificationBadge = (isVerified: boolean) => {
+    return isVerified ? (
+      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+        <CheckCircle size={12} className="mr-1" />
+        Verified
+      </span>
+    ) : (
+      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+        <Clock size={12} className="mr-1" />
+        Pending
+      </span>
+    );
+  };
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -233,6 +325,8 @@ function UserManagement() {
     
     return pages;
   };
+
+  const selectedDriver = users?.find(user => user.id === selectedDriverId);
 
   if (isLoading) {
     return (
@@ -312,7 +406,6 @@ function UserManagement() {
             </div>
           </div>
           
-          {/* Results summary */}
           <div className="mt-4 text-sm text-gray-600">
             Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users
           </div>
@@ -370,6 +463,15 @@ function UserManagement() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end space-x-3">
+                      {user.is_driver && (
+                        <button 
+                          onClick={() => handleViewDriverDetails(user.id)}
+                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          title="View Driver Documents"
+                        >
+                          <Eye size={20} />
+                        </button>
+                      )}
                       <button 
                         className="text-gray-400 hover:text-orange-600 transition-colors"
                         title="Edit User"
@@ -454,6 +556,135 @@ function UserManagement() {
         )}
       </div>
 
+      {/* Driver Details Modal */}
+      <AnimatePresence>
+        {isDriverDetailsModalOpen && selectedDriver && (
+          <>
+            <motion.div
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCloseDriverDetails}
+            >
+              <motion.div
+                className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">Driver Details</h3>
+                    <p className="text-sm text-gray-500 mt-1">{selectedDriver.full_name}</p>
+                  </div>
+                  <button
+                    onClick={handleCloseDriverDetails}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <div className="p-6">
+                  {/* Driver Info */}
+                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                        {selectedDriver.photo_url ? (
+                          <img src={selectedDriver.photo_url} alt={selectedDriver.full_name} className="h-full w-full object-cover" />
+                        ) : (
+                          <User className="h-8 w-8 text-gray-400" />
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-medium text-gray-900">{selectedDriver.full_name}</h4>
+                        <p className="text-sm text-gray-500">{selectedDriver.email}</p>
+                        <p className="text-sm text-gray-500">{selectedDriver.phone}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Documents Section */}
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                      <FileText className="mr-2" size={20} />
+                      Driver Documents
+                    </h4>
+                    
+                    {documentsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                      </div>
+                    ) : driverDocuments && driverDocuments.length > 0 ? (
+                      <div className="space-y-4">
+                        {driverDocuments.map((document) => (
+                          <div key={document.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-3">
+                                  <FileText size={20} className="text-gray-400" />
+                                  <div>
+                                    <h5 className="font-medium text-gray-900">{document.label}</h5>
+                                    <p className="text-sm text-gray-500">{document.file_name}</p>
+                                    <p className="text-xs text-gray-400">
+                                      Uploaded: {new Date(document.created_at).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center space-x-3">
+                                {getVerificationBadge(document.is_verified)}
+                                
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleDownloadDocument(document.file_path, document.file_name)}
+                                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                                    title="Download Document"
+                                  >
+                                    <Download size={16} />
+                                  </button>
+                                  
+                                  {!document.is_verified ? (
+                                    <button
+                                      onClick={() => verifyDocument.mutate({ documentId: document.id, isVerified: true })}
+                                      className="p-2 text-gray-400 hover:text-green-600 transition-colors"
+                                      title="Verify Document"
+                                    >
+                                      <CheckCircle size={16} />
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => verifyDocument.mutate({ documentId: document.id, isVerified: false })}
+                                      className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                                      title="Unverify Document"
+                                    >
+                                      <XCircle size={16} />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <FileText size={40} className="mx-auto text-gray-300 mb-2" />
+                        <p>No documents uploaded yet</p>
+                        <p className="text-sm">Driver hasn't submitted any documents for verification</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Add User Modal */}
       <AnimatePresence>
         {isAddUserModalOpen && (
@@ -491,21 +722,6 @@ function UserManagement() {
                       id="full_name"
                       name="full_name"
                       value={newUser.full_name}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="Enter full name"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={newUser.email}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="Enter email address"
@@ -589,3 +805,19 @@ function UserManagement() {
 }
 
 export default UserManagement;
+// ring-orange-500 focus:border-transparent"
+//                       placeholder="Enter full name"
+//                     />
+//                   </div>
+                  
+//                   <div>
+//                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+//                       Email Address
+//                     </label>
+//                     <input
+//                       type="email"
+//                       id="email"
+//                       name="email"
+//                       value={newUser.email}
+//                       onChange={handleInputChange}
+//                       className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:
