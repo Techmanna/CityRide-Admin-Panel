@@ -14,9 +14,18 @@ interface UserData {
   full_name: string;
   phone: string;
   is_driver: boolean;
+  is_verified: boolean;
   photo_url: string;
   created_at: string;
   email: string;
+  drivers?: {
+    id: string;
+    is_verified: boolean;
+    is_available: boolean;
+    rating: number;
+    plate_number: string;
+    model: string;
+  };
 }
 
 interface DriverDocument {
@@ -44,6 +53,7 @@ function UserManagement() {
     email: '',
     phone: '',
     is_driver: false,
+    is_verified: false,
     photo_url: ''
   });
   const queryClient = useQueryClient();
@@ -53,7 +63,17 @@ function UserManagement() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select(`
+          *,
+          drivers (
+            id,
+            is_verified,
+            is_available,
+            rating,
+            plate_number,
+            model
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -89,7 +109,7 @@ function UserManagement() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['user_profiles'] });
     },
   });
 
@@ -107,6 +127,23 @@ function UserManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['driver_documents', selectedDriverId] });
+    },
+  });
+
+  // Fixed driver verification mutation
+  const toggleDriverVerification = useMutation({
+    mutationFn: async ({ driverId, isVerified }: { driverId: string; isVerified: boolean }) => {
+      const { error } = await supabase
+        .from('drivers')
+        .update({ is_verified: isVerified })
+        .eq('id', driverId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user_profiles'] });
+      // queryClient.refetchQueries({ queryKey: ['user_profiles'], exact: false });
+  // alert(`Driver ${newStatus ? 'verified' : 'unverified'} successfully`);
     },
   });
 
@@ -154,7 +191,7 @@ function UserManagement() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['user_profiles'] });
     },
   });
 
@@ -180,35 +217,33 @@ function UserManagement() {
   };
 
   const handleDownloadDocument = async (filePath: string, fileName: string) => {
-  try {
-    console.log('Attempting to download file from path:', filePath); // Debug
+    try {
+      console.log('Attempting to download file from path:', filePath);
 
-    
-    const path = filePath.replace(/^driver-documents\//, '');
+      const path = filePath.replace(/^driver-documents\//, '');
 
-    const { data, error } = await supabase.storage
-      .from('driver-documents')
-      .download(path);
+      const { data, error } = await supabase.storage
+        .from('driver-documents')
+        .download(path);
 
-    if (error) {
-      console.error('Supabase download error:', error.message || error);
-      throw error;
+      if (error) {
+        console.error('Supabase download error:', error.message || error);
+        throw error;
+      }
+
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Error downloading file:', error.message || error);
+      alert(`Error downloading file: ${error.message || error}`);
     }
-
-    const url = URL.createObjectURL(data);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  } catch (error: any) {
-    console.error('Error downloading file:', error.message || error);
-    alert(`Error downloading file: ${error.message || error}`);
-  }
-};
-
+  };
 
   // Enhanced filtering with role filter functionality
   const filteredUsers = useMemo(() => {
@@ -286,6 +321,87 @@ function UserManagement() {
       </span>
     );
   };
+
+  
+  // Add this state to track individual loading states
+const [loadingDrivers, setLoadingDrivers] = useState<Set<string>>(new Set());
+
+// Updated handleToggleVerification function with optimistic updates
+const handleToggleVerification = async (user: UserData) => {
+  if (!user.is_driver) {
+    alert('This user is not a driver');
+    return;
+  }
+
+  setLoadingDrivers(prev => new Set(prev).add(user.id));
+
+  try {
+    const { data: driverData, error: fetchError } = await supabase
+      .from('drivers')
+      .select('id, is_verified')
+      .eq('user_id', user.id)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching driver data:', fetchError);
+      alert('Error fetching driver information');
+      return;
+    }
+
+    if (!driverData) {
+      alert('Driver record not found');
+      return;
+    }
+
+    const currentStatus = driverData.is_verified;
+    const newStatus = !currentStatus;
+
+    if (window.confirm(`Are you sure you want to ${newStatus ? 'verify' : 'unverify'} this driver?`)) {
+      const { error: updateError } = await supabase
+        .from('drivers')
+        .update({
+          is_verified: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', driverData.id);
+
+      if (updateError) {
+        console.error('Error updating driver verification:', updateError);
+        alert('Error updating driver verification status');
+        return;
+      }
+
+      // ✅ Immediately update cache to reflect new status
+      queryClient.setQueryData<UserData[]>(['user_profiles'], oldData => {
+        if (!oldData) return oldData;
+        return oldData.map(u => {
+          if (u.id === user.id && u.drivers) {
+            return {
+              ...u,
+              drivers: {
+                ...u.drivers,
+                is_verified: newStatus,
+              },
+            };
+          }
+          return u;
+        });
+      });
+
+      alert(`Driver ${newStatus ? 'verified' : 'unverified'} successfully`);
+    }
+  } catch (error) {
+    console.error('Error in handleToggleVerification:', error);
+    alert('An unexpected error occurred');
+  } finally {
+    setLoadingDrivers(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(user.id);
+      return newSet;
+    });
+  }
+};
+
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -418,6 +534,7 @@ function UserManagement() {
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">User</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Contact</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Role</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Status</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Joined</th>
                 <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">Actions</th>
               </tr>
@@ -455,6 +572,72 @@ function UserManagement() {
                   <td className="px-6 py-4">
                     {getDriverBadge(user.is_driver)}
                   </td>
+                 <td className="px-6 py-4">
+  <div className="flex items-center space-x-2">
+    {user.is_driver && user.drivers ? (
+  <>
+    <motion.span
+      key={`${user.id}-${user.drivers.is_verified}`}
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.2 }}
+      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+        user.drivers.is_verified 
+          ? 'bg-green-100 text-green-800 border border-green-200' 
+          : 'bg-red-100 text-red-800 border border-red-200'
+      }`}
+    >
+      {user.drivers.is_verified ? (
+        <>
+          <CheckCircle size={12} className="mr-1" />
+          Verified
+        </>
+      ) : (
+        <>
+          <XCircle size={12} className="mr-1" />
+          Not Verified
+        </>
+      )}
+    </motion.span>
+
+    <button
+      onClick={() => handleToggleVerification(user)}
+      disabled={loadingDrivers.has(user.id)}
+      className={`text-xs px-3 py-1 border rounded-md font-medium transition-all duration-200 ${
+        loadingDrivers.has(user.id)
+          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+          : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700 hover:border-gray-400 hover:shadow-sm active:bg-gray-100'
+      }`}
+    >
+      {loadingDrivers.has(user.id) ? (
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+          <span>Loading...</span>
+        </div>
+      ) : (
+        user.drivers.is_verified ? 'Unverify' : 'Verify'
+      )}
+    </button>
+  </>
+) : user.is_driver ? (
+  <div className="flex items-center space-x-2">
+    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+      <AlertCircle size={12} className="mr-1" />
+      Driver (No Record)
+    </span>
+    <span className="text-xs text-gray-500">
+      Missing driver profile
+    </span>
+  </div>
+) : (
+  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+    <User size={12} className="mr-1" />
+    Customer
+  </span>
+)}
+
+  </div>
+</td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     <div className="flex items-center space-x-2">
                       <Calendar size={16} className="text-gray-400" />
