@@ -336,15 +336,25 @@ const handleToggleVerification = async (user: UserData) => {
   setLoadingDrivers(prev => new Set(prev).add(user.id));
 
   try {
+    // First, check if we have admin/service role access
+    const { data: sessionData } = await supabase.auth.getSession();
+    console.log('Current session:', sessionData?.session?.user?.role);
+
+    // Fetch current driver data with explicit error handling
     const { data: driverData, error: fetchError } = await supabase
       .from('drivers')
-      .select('id, is_verified')
+      .select('id, is_verified, user_id')
       .eq('user_id', user.id)
       .single();
 
     if (fetchError) {
-      console.error('Error fetching driver data:', fetchError);
-      alert('Error fetching driver information');
+      console.error('Fetch error details:', {
+        message: fetchError.message,
+        details: fetchError.details,
+        hint: fetchError.hint,
+        code: fetchError.code
+      });
+      alert(`Error fetching driver data: ${fetchError.message}`);
       return;
     }
 
@@ -357,42 +367,68 @@ const handleToggleVerification = async (user: UserData) => {
     const newStatus = !currentStatus;
 
     if (window.confirm(`Are you sure you want to ${newStatus ? 'verify' : 'unverify'} this driver?`)) {
-      const { error: updateError } = await supabase
+      
+      // Try the update with detailed error logging
+      const { data: updateData, error: updateError } = await supabase
         .from('drivers')
-        .update({
+        .update({ 
           is_verified: newStatus,
-          updated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
-        .eq('id', driverData.id);
+        .eq('id', driverData.id)
+        .select('id, is_verified, user_id');
 
       if (updateError) {
-        console.error('Error updating driver verification:', updateError);
-        alert('Error updating driver verification status');
+        console.error('Update error details:', {
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint,
+          code: updateError.code
+        });
+        
+        // Check if it's an RLS issue
+        if (updateError.code === '42501' || updateError.message.includes('permission')) {
+          alert('Permission denied: You may not have sufficient privileges to update driver verification status.');
+        } else {
+          alert(`Error updating driver verification: ${updateError.message}`);
+        }
         return;
       }
 
-      // ✅ Immediately update cache to reflect new status
-      queryClient.setQueryData<UserData[]>(['user_profiles'], oldData => {
-        if (!oldData) return oldData;
-        return oldData.map(u => {
-          if (u.id === user.id && u.drivers) {
-            return {
-              ...u,
-              drivers: {
-                ...u.drivers,
-                is_verified: newStatus,
-              },
-            };
-          }
-          return u;
-        });
+      console.log('Update successful:', updateData);
+
+      // Check if any rows were actually updated
+      if (!updateData || updateData.length === 0) {
+        alert('No rows were updated. This might be due to Row Level Security policies.');
+        return;
+      }
+
+      // Double-check the update
+      const updatedRecord = updateData[0];
+      if (updatedRecord.is_verified !== newStatus) {
+        alert('Update failed: The verification status did not change as expected.');
+        return;
+      }
+
+      // Refresh the UI data
+      await queryClient.invalidateQueries({ 
+        queryKey: ['user_profiles'],
+        exact: true 
+      });
+
+      // Small delay to ensure the invalidation processes
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      await queryClient.refetchQueries({ 
+        queryKey: ['user_profiles'],
+        exact: true 
       });
 
       alert(`Driver ${newStatus ? 'verified' : 'unverified'} successfully`);
     }
-  } catch (error) {
-    console.error('Error in handleToggleVerification:', error);
-    alert('An unexpected error occurred');
+  } catch (error: any) {
+    console.error('Unexpected error:', error);
+    alert(`An unexpected error occurred: ${error.message || error}`);
   } finally {
     setLoadingDrivers(prev => {
       const newSet = new Set(prev);

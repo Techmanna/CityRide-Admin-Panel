@@ -12,7 +12,7 @@ function SettingsPanel() {
     supportEmail: '',
     supportPhone: '',
     currency: 'NGN',
-    fare: 0,
+    commission_percentage: 0,
   });
   const [errors, setErrors] = useState({});
 
@@ -36,7 +36,7 @@ function SettingsPanel() {
           supportEmail: data.support_email || '',
           supportPhone: data.support_phone || '',
           currency: data.currency || 'NGN',
-          fare: Number(data.fare || 0),
+          commission_percentage: Number(data.commission_percentage || 0),
         });
         setSettingsId(data.id);
       }
@@ -65,8 +65,8 @@ function SettingsPanel() {
       case 'currency':
         if (!value.trim()) validationErrors.currency = "Currency is required";
         break;
-      case 'fare':
-        if (isNaN(value) || Number(value) < 0) validationErrors.fare = "Fare must be a positive number";
+      case 'commission_percentage':
+        if (isNaN(value) || Number(value) < 0) validationErrors.commission_percentage = "Fare must be a positive number";
         break;
       default:
         break;
@@ -92,7 +92,7 @@ function SettingsPanel() {
         supportEmail: 'support_email',
         supportPhone: 'support_phone',
         currency: 'currency',
-        fare: 'fare'
+        commission_percentage: 'commission_percentage'
       };
       
       const dbField = fieldMap[name];
@@ -182,7 +182,7 @@ function SettingsPanel() {
         support_email: formValues.supportEmail,
         support_phone: formValues.supportPhone,
         currency: formValues.currency,
-        fare: formValues.fare,
+        commission_percentage: formValues.commission_percentage,
         updated_at: new Date().toISOString(),
       };
       
@@ -252,7 +252,7 @@ function SettingsPanel() {
               { label: 'Support Email', name: 'supportEmail', type: 'email' },
               { label: 'Support Phone', name: 'supportPhone' },
               { label: 'Currency', name: 'currency' },
-              { label: 'Fare (₦)', name: 'fare', type: 'number' },
+              { label: 'Commission (₦)', name: 'commission_percentage', type: 'number' },
             ].map((field) => (
               <div key={field.name}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
