@@ -161,7 +161,7 @@ function RideManagement() {
               {statsLoading ? (
                 <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
               ) : (
-                <h3 className="text-2xl font-bold">${statsData?.todayRevenue.toFixed(2)}</h3>
+                <h3 className="text-2xl font-bold">₦{statsData?.todayRevenue.toFixed(2)}</h3>
               )}
             </div>
             <Hash className="text-yellow-500 h-8 w-8" />
@@ -267,7 +267,7 @@ function RideManagement() {
                       {ride.distance_km ? `${Number(ride.distance_km).toFixed(1)} km` : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      ${ride.total ? Number(ride.total).toFixed(2) : ride.fare ? Number(ride.fare).toFixed(2) : '0.00'}
+                      ₦{ride.total ? Number(ride.total).toFixed(2) : ride.fare ? Number(ride.fare).toFixed(2) : '0.00'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {formatDate(ride.scheduled_time)}
