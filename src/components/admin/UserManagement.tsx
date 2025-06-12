@@ -336,11 +336,9 @@ const handleToggleVerification = async (user: UserData) => {
   setLoadingDrivers(prev => new Set(prev).add(user.id));
 
   try {
-    // First, check if we have admin/service role access
     const { data: sessionData } = await supabase.auth.getSession();
     console.log('Current session:', sessionData?.session?.user?.role);
 
-    // Fetch current driver data with explicit error handling
     const { data: driverData, error: fetchError } = await supabase
       .from('drivers')
       .select('id, is_verified, user_id')
@@ -348,12 +346,7 @@ const handleToggleVerification = async (user: UserData) => {
       .single();
 
     if (fetchError) {
-      console.error('Fetch error details:', {
-        message: fetchError.message,
-        details: fetchError.details,
-        hint: fetchError.hint,
-        code: fetchError.code
-      });
+      console.error('Fetch error details:', fetchError);
       alert(`Error fetching driver data: ${fetchError.message}`);
       return;
     }
@@ -367,8 +360,6 @@ const handleToggleVerification = async (user: UserData) => {
     const newStatus = !currentStatus;
 
     if (window.confirm(`Are you sure you want to ${newStatus ? 'verify' : 'unverify'} this driver?`)) {
-      
-      // Try the update with detailed error logging
       const { data: updateData, error: updateError } = await supabase
         .from('drivers')
         .update({ 
@@ -379,50 +370,25 @@ const handleToggleVerification = async (user: UserData) => {
         .select('id, is_verified, user_id');
 
       if (updateError) {
-        console.error('Update error details:', {
-          message: updateError.message,
-          details: updateError.details,
-          hint: updateError.hint,
-          code: updateError.code
-        });
-        
-        // Check if it's an RLS issue
-        if (updateError.code === '42501' || updateError.message.includes('permission')) {
-          alert('Permission denied: You may not have sufficient privileges to update driver verification status.');
-        } else {
-          alert(`Error updating driver verification: ${updateError.message}`);
-        }
+        console.error('Update error details:', updateError);
+        alert(`Error updating driver verification: ${updateError.message}`);
         return;
       }
 
-      console.log('Update successful:', updateData);
-
-      // Check if any rows were actually updated
       if (!updateData || updateData.length === 0) {
         alert('No rows were updated. This might be due to Row Level Security policies.');
         return;
       }
 
-      // Double-check the update
       const updatedRecord = updateData[0];
       if (updatedRecord.is_verified !== newStatus) {
         alert('Update failed: The verification status did not change as expected.');
         return;
       }
 
-      // Refresh the UI data
-      await queryClient.invalidateQueries({ 
-        queryKey: ['user_profiles'],
-        exact: true 
-      });
-
-      // Small delay to ensure the invalidation processes
+      await queryClient.invalidateQueries({ queryKey: ['user_profiles'], exact: true });
       await new Promise(resolve => setTimeout(resolve, 100));
-      
-      await queryClient.refetchQueries({ 
-        queryKey: ['user_profiles'],
-        exact: true 
-      });
+      await queryClient.refetchQueries({ queryKey: ['user_profiles'], exact: true });
 
       alert(`Driver ${newStatus ? 'verified' : 'unverified'} successfully`);
     }
@@ -437,6 +403,7 @@ const handleToggleVerification = async (user: UserData) => {
     });
   }
 };
+
 
 
   const handlePageChange = (page: number) => {
@@ -610,70 +577,70 @@ const handleToggleVerification = async (user: UserData) => {
                   </td>
                  <td className="px-6 py-4">
   <div className="flex items-center space-x-2">
-    {user.is_driver && user.drivers ? (
-  <>
-    <motion.span
-      key={`${user.id}-${user.drivers.is_verified}`}
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.2 }}
-      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-        user.drivers.is_verified 
-          ? 'bg-green-100 text-green-800 border border-green-200' 
-          : 'bg-red-100 text-red-800 border border-red-200'
-      }`}
-    >
-      {user.drivers.is_verified ? (
-        <>
-          <CheckCircle size={12} className="mr-1" />
-          Verified
-        </>
-      ) : (
-        <>
-          <XCircle size={12} className="mr-1" />
-          Not Verified
-        </>
-      )}
-    </motion.span>
+    {user.is_driver && Array.isArray(user.drivers) && user.drivers.length > 0 ? (
+      <>
+        <motion.span
+          key={`${user.id}-${user.drivers[0].is_verified}`}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.2 }}
+          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+            user.drivers[0].is_verified
+              ? 'bg-green-100 text-green-800 border border-green-200'
+              : 'bg-red-100 text-red-800 border border-red-200'
+          }`}
+        >
+          {user.drivers[0].is_verified ? (
+            <>
+              <CheckCircle size={12} className="mr-1" />
+              Verified
+            </>
+          ) : (
+            <>
+              <XCircle size={12} className="mr-1" />
+              Not Verified
+            </>
+          )}
+        </motion.span>
 
-    <button
-      onClick={() => handleToggleVerification(user)}
-      disabled={loadingDrivers.has(user.id)}
-      className={`text-xs px-3 py-1 border rounded-md font-medium transition-all duration-200 ${
-        loadingDrivers.has(user.id)
-          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-          : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700 hover:border-gray-400 hover:shadow-sm active:bg-gray-100'
-      }`}
-    >
-      {loadingDrivers.has(user.id) ? (
-        <div className="flex items-center space-x-1">
-          <div className="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-          <span>Loading...</span>
-        </div>
-      ) : (
-        user.drivers.is_verified ? 'Unverify' : 'Verify'
-      )}
-    </button>
-  </>
-) : user.is_driver ? (
-  <div className="flex items-center space-x-2">
-    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-      <AlertCircle size={12} className="mr-1" />
-      Driver (No Record)
-    </span>
-    <span className="text-xs text-gray-500">
-      Missing driver profile
-    </span>
-  </div>
-) : (
-  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-    <User size={12} className="mr-1" />
-    Customer
-  </span>
-)}
-
+        <button
+          onClick={() => handleToggleVerification(user)}
+          disabled={loadingDrivers.has(user.id)}
+          className={`text-xs px-3 py-1 border rounded-md font-medium transition-all duration-200 ${
+            loadingDrivers.has(user.id)
+              ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+              : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700 hover:border-gray-400 hover:shadow-sm active:bg-gray-100'
+          }`}
+        >
+          {loadingDrivers.has(user.id) ? (
+            <div className="flex items-center space-x-1">
+              <div className="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+              <span>Loading...</span>
+            </div>
+          ) : (
+            user.drivers[0].is_verified ? 'Unverify' : 'Verify'
+          )}
+        </button>
+      </>
+    ) : user.is_driver ? (
+      <div className="flex items-center space-x-2">
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+          <AlertCircle size={12} className="mr-1" />
+          Driver (No Record)
+        </span>
+        <span className="text-xs text-gray-500">
+          Missing driver profile
+        </span>
+      </div>
+    ) : (
+      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+        <User size={12} className="mr-1" />
+        Customer
+      </span>
+    )}
   </div>
 </td>
+
                   <td className="px-6 py-4 text-sm text-gray-500">
                     <div className="flex items-center space-x-2">
                       <Calendar size={16} className="text-gray-400" />
