@@ -2,8 +2,9 @@ import React, { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-interface ProtectedRouteProps {
+interface PublicRouteProps {
   children: ReactNode;
+  redirectTo?: string;
 }
 
 // Loading Spinner Component
@@ -18,26 +19,26 @@ function LoadingSpinner() {
   );
 }
 
-function ProtectedRoute({ children }: ProtectedRouteProps) {
+function PublicRoute({ children, redirectTo = "/admin" }: PublicRouteProps) {
   const { isAuthenticated, loading } = useAuth();
 
-  console.log('🛡️ ProtectedRoute - Auth State:', { isAuthenticated, loading });
+  console.log('🌐 PublicRoute - Auth State:', { isAuthenticated, loading });
 
   // Show loading spinner while checking authentication status
   if (loading) {
-    console.log('⏳ ProtectedRoute - Showing loading spinner');
+    console.log('⏳ PublicRoute - Showing loading spinner');
     return <LoadingSpinner />;
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
-    console.log('🚫 ProtectedRoute - Not authenticated, redirecting to login');
-    return <Navigate to="/login" replace />;
+  // Redirect to dashboard if already authenticated
+  if (isAuthenticated) {
+    console.log('✅ PublicRoute - Already authenticated, redirecting to dashboard');
+    return <Navigate to={redirectTo} replace />;
   }
 
-  // Render the protected component if authenticated
-  console.log('✅ ProtectedRoute - Authenticated, rendering children');
+  // Render the public component if not authenticated
+  console.log('🔓 PublicRoute - Not authenticated, rendering children');
   return <>{children}</>;
 }
 
-export default ProtectedRoute;
+export default PublicRoute;

@@ -6,6 +6,7 @@ import LandingPage from './pages/LandingPage';
 import AdminDashboard from './pages/AdminDashboard';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
 
 const queryClient = new QueryClient();
 
@@ -16,7 +17,14 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
+            <Route 
+              path="/login" 
+              element={
+                <PublicRoute redirectTo="/admin">
+                  <Login />
+                </PublicRoute>
+              } 
+            />
             <Route
               path="/admin/*"
               element={
